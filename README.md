@@ -14,3 +14,5 @@ I don't know what causes it, but a common artifact in VHS tapes is bright white 
 A distinct feature of VHS video is dark and light fringes to the left and right of sharp vertical edges. This is implemented using a slightly blurred buffer from the color bleeding step offset to the right.
 
 With all of these working together you get a much more authentic VHS filter!
+
+This effect uses Unity's Post Processing package.
