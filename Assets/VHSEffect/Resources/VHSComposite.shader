@@ -5,11 +5,10 @@ Shader "Hidden/VHSComposite"
     #include "Packages/com.unity.postprocessing/PostProcessing/Shaders/StdLib.hlsl"
 
     TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
+    float4 _MainTex_TexelSize;
     TEXTURE2D_SAMPLER2D(_SlightBlurredTex, sampler_SlightBlurredTex);
     TEXTURE2D_SAMPLER2D(_BlurredTex, sampler_BlurredTex);
     TEXTURE2D_SAMPLER2D(_Grain, sampler_Grain);
-    TEXTURE2D(_Noise);
-    float _NoiseOpacity;
     float _ColorBleedIntensity;
     float _EdgeIntensity;
     float _EdgeDistance;
@@ -32,8 +31,9 @@ Shader "Hidden/VHSComposite"
 
     float4 Frag(VaryingsDefault i) : SV_Target
     {
-        float4 sharpColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord);
-        sharpColor.rgb += SAMPLE_TEXTURE2D(_Noise, sampler_MainTex, i.texcoord).r * _NoiseOpacity;
+        float2 quarterpixel = _MainTex_TexelSize.xy * 0.25;
+
+        float4 sharpColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord + quarterpixel);
 
         float3 edges = sharpColor.rgb + 0.5 - (SAMPLE_TEXTURE2D(_SlightBlurredTex, sampler_SlightBlurredTex, i.texcoord - float2(_EdgeDistance, 0)).rgb);
         sharpColor.rgb += (edges - 0.5) * _EdgeIntensity;
@@ -45,8 +45,6 @@ Shader "Hidden/VHSComposite"
         sharpColor.yz = lerp(sharpColor.yz, blurredColor.xy, _ColorBleedIntensity);
         sharpColor.yz += (colorGrain.xy - 0.5) * _GrainIntensity * sharpColor.x;
         sharpColor.x *= 1 + (lumGrain - 0.5) * _GrainIntensity * 0.5;
-
-
 
         return float4(YCbCrToRGB(sharpColor.rgb), sharpColor.a);
     }

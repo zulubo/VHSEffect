@@ -9,8 +9,10 @@ public sealed class VHS : PostProcessEffectSettings
 {
     [Range(0f, 1f)]
     public FloatParameter colorBleedingIntensity = new FloatParameter { value = 0.5f };
-    [Range(2, 8), Tooltip("Color bleed iterations")]
-    public IntParameter colorBleedIterations = new IntParameter { value = 2 };
+    [Range(0, 1), Tooltip("Color bleed iterations")]
+    public FloatParameter colorBleedRadius = new FloatParameter { value = 0.5f };
+    [Range(-1, 1), Tooltip("Color bleed direction")]
+    public FloatParameter colorBleedDirection = new FloatParameter { value = 0.0f };
     [Range(0f, 1f)]
     public FloatParameter grainIntensity = new FloatParameter { value = 0.1f };
     [Range(0.01f, 2f)]
@@ -137,15 +139,19 @@ public sealed class VHSRenderer : PostProcessEffectRenderer<VHS>
         context.command.BlitFullscreenTriangle(noiseBuffer, noiseBuffer2, noiseSheet, 1);
         noiseSheet.properties.SetVector("_SmearOffsetAttenuation", new Vector4(5, 0.8f));
         context.command.BlitFullscreenTriangle(noiseBuffer2, noiseBuffer, noiseSheet, 1);
-        
+
+        float blurAmount = Mathf.Clamp(Mathf.Log(context.width * settings.colorBleedRadius * 0.25f, 2f), 3, 8);
+        int blurIterations = Mathf.FloorToInt(blurAmount);
         
         // create blur pyramid
-        if (blurPyramid == null || blurPyramid.Length != settings.colorBleedIterations) blurPyramid = new RenderTexture[settings.colorBleedIterations];
-        int w = context.width / 2;
-        int h = context.height / 2;
+        if (blurPyramid == null || blurPyramid.Length != blurIterations) blurPyramid = new RenderTexture[blurIterations];
+        int w = context.width;
+        int h = context.height;
         var downsampleSheet = context.propertySheets.Get(shader_downsample);
-        for (int i = 0; i < settings.colorBleedIterations; i++)
+        downsampleSheet.properties.SetFloat("_BlurBias", settings.colorBleedDirection);
+        for (int i = 0; i < blurIterations; i++)
         {
+            downsampleSheet.properties.SetVector("_OddScale", GetOddScale(w,h));
             w /= 2;
             h /= 2;
             if(blurPyramid[i] != null && (blurPyramid[i].width != w || blurPyramid[i].height != h))
@@ -154,15 +160,27 @@ public sealed class VHSRenderer : PostProcessEffectRenderer<VHS>
                 blurPyramid[i] = null;
             }
             if(blurPyramid[i] == null) blurPyramid[i] = RenderTexture.GetTemporary(w, h, 0, context.sourceFormat);
-            downsampleSheet.properties.SetTexture("_Noise", i == 0 ? noiseBuffer : Texture2D.blackTexture);
-            if(i == 0) downsampleSheet.properties.SetFloat("_NoiseOpacity", settings.stripeNoiseOpacity);
-            context.command.BlitFullscreenTriangle( i == 0 ? context.source : blurPyramid[i - 1], blurPyramid[i], downsampleSheet, 0);
+            if(i == 0)
+            {
+                downsampleSheet.properties.SetTexture("_Noise", noiseBuffer);
+                downsampleSheet.properties.SetFloat("_NoiseOpacity", settings.stripeNoiseOpacity);
+                context.command.BlitFullscreenTriangle(context.source, blurPyramid[i], downsampleSheet, 0);
+            }
+            else
+            {
+                context.command.BlitFullscreenTriangle(blurPyramid[i - 1], blurPyramid[i], downsampleSheet, 1);
+            }
         }
 
-        for (int i = settings.colorBleedIterations - 1; i > 1; i--)
+        for (int i = blurIterations - 1; i > 2; i--)
         {
-            downsampleSheet.properties.SetFloat("_UpsampleBlend", 0.6f);
-            context.command.BlitFullscreenTriangle(blurPyramid[i], blurPyramid[i - 1], downsampleSheet, 1);
+            float fac = 1;
+            if (i == blurIterations - 1)
+            {
+                fac = blurAmount - blurIterations;
+            }
+            downsampleSheet.properties.SetFloat("_UpsampleBlend", 0.7f * fac);
+            context.command.BlitFullscreenTriangle(blurPyramid[i], blurPyramid[i - 1], downsampleSheet, 2);
         }
 
 
@@ -175,8 +193,20 @@ public sealed class VHSRenderer : PostProcessEffectRenderer<VHS>
         compositeSheet.properties.SetFloat("_NoiseOpacity", settings.stripeNoiseOpacity);
         compositeSheet.properties.SetFloat("_EdgeIntensity", settings.edgeIntensity);
         compositeSheet.properties.SetFloat("_EdgeDistance", settings.edgeDistance);
-        compositeSheet.properties.SetTexture("_SlightBlurredTex", blurPyramid[0]);
-        compositeSheet.properties.SetTexture("_BlurredTex", blurPyramid[1]);
-        context.command.BlitFullscreenTriangle(context.source, context.destination, compositeSheet, 0);
+        compositeSheet.properties.SetTexture("_SlightBlurredTex", blurPyramid[1]);
+        compositeSheet.properties.SetTexture("_BlurredTex", blurPyramid[2]);
+        context.command.BlitFullscreenTriangle(blurPyramid[0], context.destination, compositeSheet, 0);
+    }
+
+    Vector2 GetOddScale(int w, int h)
+    {
+        bool we = w % 2 == 0;
+        bool he = h % 2 == 0;
+        int w2 = w / 2;
+        int h2 = h / 2;
+        return new Vector4(we ? 1 : ((w2 - 1f) / w2),
+            he ? 1 : ((h2 - 1f) / h2),
+            we ? 1f / w : 1f / (w - 1),
+            he ? 1f / h : 1f / (h - 1));
     }
 }

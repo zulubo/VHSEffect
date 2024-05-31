@@ -15,7 +15,7 @@ Shader "Hidden/VHSNoiseGen"
         {
             float horizontalNoise = SAMPLE_TEXTURE2D(_HorizontalNoise, sampler_HorizontalNoise, float2(_HorizontalNoisePos, i.texcoord.y)).r;
             float speckNoise = SAMPLE_TEXTURE2D(_SpeckNoise, sampler_SpeckNoise, (i.texcoord - _SpeckNoiseScaleOffset.zw) * _SpeckNoiseScaleOffset.xy).r;
-            return speckNoise > pow(saturate((1 - horizontalNoise) * (1 - horizontalNoise)), _HorizontalNoisePower);
+            return speckNoise > pow((1-horizontalNoise)* (1 - horizontalNoise), _HorizontalNoisePower);
         }
 
         TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
