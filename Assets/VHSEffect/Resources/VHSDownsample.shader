@@ -13,7 +13,7 @@ Shader "Hidden/VHSDownsample"
     uniform float _BlurBias;
 
     float4 FragDown(VaryingsDefault i) : SV_Target
-    
+    {
         i.texcoord.xy /= _OddScale.xy;
         float2 offset = _MainTex_TexelSize.xy * _OddScale.xy;
         float2 halfPixel = _MainTex_TexelSize.xy * -0.5 * _OddScale.xy;
