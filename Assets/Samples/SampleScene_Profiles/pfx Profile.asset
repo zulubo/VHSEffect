@@ -19,21 +19,27 @@ MonoBehaviour:
   colorBleedingIntensity:
     overrideState: 1
     value: 1
-  colorBleedIterations:
+  colorBleedRadius:
     overrideState: 1
-    value: 5
+    value: 0.395
+  colorBleedDirection:
+    overrideState: 1
+    value: 0
+  smearIntensity:
+    overrideState: 1
+    value: 0.287
   grainIntensity:
     overrideState: 1
-    value: 0.279
+    value: 0.306
   grainScale:
     overrideState: 1
     value: 0.765
   stripeNoiseDensity:
     overrideState: 1
-    value: 0.194
+    value: 0.332
   stripeNoiseOpacity:
     overrideState: 1
-    value: 0.684
+    value: 0.301
   edgeIntensity:
     overrideState: 1
     value: 1

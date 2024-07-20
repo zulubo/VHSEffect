@@ -6,10 +6,12 @@ Shader "Hidden/VHSComposite"
 
     TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
     float4 _MainTex_TexelSize;
-    TEXTURE2D_SAMPLER2D(_SlightBlurredTex, sampler_SlightBlurredTex);
-    TEXTURE2D_SAMPLER2D(_BlurredTex, sampler_BlurredTex);
+    TEXTURE2D_SAMPLER2D(_VHSSlightBlurredTex, sampler_VHSSlightBlurredTex);
+    TEXTURE2D_SAMPLER2D(_VHSBlurredTex, sampler_VHSBlurredTex);
+    TEXTURE2D_SAMPLER2D(_VHSSmearedTex, sampler_VHSSmearedTex);
     TEXTURE2D_SAMPLER2D(_Grain, sampler_Grain);
     float _ColorBleedIntensity;
+    float _SmearIntensity;
     float _EdgeIntensity;
     float _EdgeDistance;
     float _GrainIntensity;
@@ -35,14 +37,18 @@ Shader "Hidden/VHSComposite"
 
         float4 sharpColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord + quarterpixel);
 
-        float3 edges = sharpColor.rgb + 0.5 - (SAMPLE_TEXTURE2D(_SlightBlurredTex, sampler_SlightBlurredTex, i.texcoord - float2(_EdgeDistance, 0)).rgb);
+        float3 edges = sharpColor.rgb + 0.5 - (SAMPLE_TEXTURE2D(_VHSSlightBlurredTex, sampler_VHSSlightBlurredTex, i.texcoord - float2(_EdgeDistance, 0)).rgb);
         sharpColor.rgb += (edges - 0.5) * _EdgeIntensity;
-
+        
+        float3 smearedColor = SAMPLE_TEXTURE2D(_VHSSmearedTex, sampler_VHSSmearedTex, i.texcoord).rgb;
+        sharpColor.rgb = lerp(sharpColor.rgb, smearedColor.rgb, _SmearIntensity);
+        
         sharpColor.xyz = RGBToYCbCr(sharpColor.rgb);
-        float2 blurredColor = RGBToYCbCr(SAMPLE_TEXTURE2D(_BlurredTex, sampler_BlurredTex, i.texcoord).rgb).yz;
+        
+        float3 blurredColor = RGBToYCbCr(SAMPLE_TEXTURE2D(_VHSBlurredTex, sampler_VHSBlurredTex, i.texcoord).rgb).xyz;
         float2 colorGrain = RGBToYCbCr(SAMPLE_TEXTURE2D(_Grain, sampler_Grain, (i.texcoord - _GrainScaleOffset.zw) * _GrainScaleOffset.xy).rgb).yz;
         float lumGrain = SAMPLE_TEXTURE2D(_Grain, sampler_Grain, (i.texcoord - _GrainScaleOffset.zw) * _GrainScaleOffset.xy * 4 - 0.5).g;
-        sharpColor.yz = lerp(sharpColor.yz, blurredColor.xy, _ColorBleedIntensity);
+        sharpColor.yz = lerp(sharpColor.yz, blurredColor.yz, _ColorBleedIntensity);
         sharpColor.yz += (colorGrain.xy - 0.5) * _GrainIntensity * sharpColor.x;
         sharpColor.x *= 1 + (lumGrain - 0.5) * _GrainIntensity * 0.5;
 
