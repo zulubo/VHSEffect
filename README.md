@@ -1,6 +1,8 @@
 # VHSEffect
 I found myself disappointed with a lot of VHS style post effects in games, they tend to just throw some horizontal chromatic aberration and noise and call it a day. I studied the artifacts of real VHS encoding and created this much more realistic image effect.
 
+<b>This effect is for Unity's Post Processing package in the built-in render pipeline.</b>
+
 ![screenshot](/Assets/Samples/screenshot.png)
 
 The elements of this effect are:
@@ -16,5 +18,3 @@ I don't know what causes it, but a common artifact in VHS tapes is bright white 
 A distinct feature of VHS video is dark and light fringes to the left and right of sharp vertical edges. This is implemented using a slightly blurred buffer from the color bleeding step offset to the right.
 
 With all of these working together you get a much more authentic VHS filter!
-
-This effect uses Unity's Post Processing package.
