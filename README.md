@@ -3,6 +3,8 @@ I found myself disappointed with a lot of VHS style post effects in games, they 
 
 <b>This effect is for Unity's Post Processing package in the built-in render pipeline.</b>
 
+[Click here for the Universal Render Pipeline version](https://github.com/zulubo/VHSEffectURP)
+
 ![screenshot](/Assets/Samples/screenshot.png)
 
 The elements of this effect are:
